@@ -1,0 +1,10 @@
+
+download_url: https://s3.amazonaws.com/softwares/jdk-8u162-linux-x64.tar.gz
+download_folder: /opt
+java_name: "{{download_folder}}/jdk1.8.0_162"
+java_archive: "{{download_folder}}/jdk-8u162-linux-x64.tar.gz"
+
+tomcat_archive_name: tcat-installer-7.1.0-linux-64bit.sh
+tomcat_download_url: https://s3.amazonaws.com/softwares/{{tomcat_archive_name}}
+tomcat_parent_path: /opt/
+tomcat_install_dir: "{{tomcat_parent_path}}/tcatserver"

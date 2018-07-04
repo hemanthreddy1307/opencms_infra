@@ -1,0 +1,61 @@
+- name: Remove require tty
+  lineinfile: regexp="^\s*\w+\s+requiretty" dest=/etc/sudoers state=absent
+
+- name: Remove !visiblepw
+  lineinfile: regexp="^\s*\w+\s+!visiblepw" dest=/etc/sudoers state=absent
+
+- name: Disable SELinux
+  selinux: state=disabled
+
+- name: Add epel repository
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: https://dl.fedoraproject.org/pub/epel/$releasever/$basearch/
+    gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7Server
+
+- name: install base utils
+  yum: state=present name={{ item }}
+  with_items:
+    - sudo
+    - vim
+    - unzip
+    - tar
+
+- name: Download Java 8
+  command: "wget -q -O {{java_archive}} --no-check-certificate --no-cookies --header 'Cookie: oraclelicense=accept-securebackup-cookie' {{download_url}} creates={{java_archive}}"
+
+- name: Unpack archive
+  command: "tar -xvf {{java_archive}} -C {{download_folder}} creates={{java_name}}"
+
+- name: Fix ownership
+  file: state=directory path={{java_name}} owner=root group=root recurse=yes
+
+- name: Make Java available for system
+  command: 'alternatives --install "/usr/bin/java" "java" "{{java_name}}/bin/java" 2000'
+
+- name: Make oracle jdk the default JDK
+  command: 'update-alternatives --set java {{java_name}}/bin/java'
+
+- name: Setup profile file for JAVA_HOME and JAVA_PATH
+  template: src=java.sh.j2 dest=/etc/profile.d/java.sh mode="u=rwx,g=rwx,o=rx"    
+
+- name: ensure directories are created
+  file: path={{item}} state=directory owner=root group=root mode=0755
+  with_items:
+    - /opt/pkgs
+    - "{{tomcat_install_dir}}"
+
+- name: download tomcat runtime
+  get_url: url="{{tomcat_download_url}}" dest=/opt/pkgs/{{tomcat_archive_name}} mode=0777
+  notify: restart tcat7
+
+- name: copy tomcat default settings
+  template: src=response-varfile.j2 dest=/opt/pkgs/response.varfile owner=root group=root mode=0777
+
+- name: run tcat.sh
+  shell: sh "{{tomcat_archive_name}}" -q -varfile /opt/pkgs/response.varfile chdir=/opt/pkgs creates={{tomcat_install_dir}}/uninstall
+
+- name: start tcat7 and set to start on startup
+  command: /sbin/chkconfig tcat7 on
+  command: service tcat7 start

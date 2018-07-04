@@ -1,0 +1,4 @@
+---
+- hosts: web
+  roles:
+  - { role: apache, become: yes, become_method: sudo}

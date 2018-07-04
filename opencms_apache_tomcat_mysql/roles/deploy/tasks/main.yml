@@ -1,0 +1,28 @@
+
+- name: stop tomcat
+  shell:  ps aux | grep {{Tomcat.path}} | grep -v grep | awk '{print "kill -9 " $2}' | bash -v
+
+- name: Unarchive a opencms war file that needs to be downloaded
+  unarchive:
+    src: "{{opencms_url}}"
+    dest: /opt/opencms
+    remote_src: yes
+  
+- name: copy mmc war file from source system to dest system
+  copy:
+    src: /opt/opencms/opencms.war
+    dest: {{tomcat_install_dir}}/webapps/opencms.war
+    owner: root
+    group: root
+    mode: 0644
+    remote_src: yes
+
+- name: Configure Tomcat server
+  template: src=server.xml dest={{tomcat_install_dir}}/conf/
+
+- name: Configure Tomcat users
+  template: src=tomcat-users.xml dest={{tomcat_install_dir}}/conf/
+
+- name: start tcat7
+  command: service tcat7 start
+
